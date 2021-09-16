@@ -1,0 +1,1 @@
+../../../../server/modules/rendering/markdown-macro-versions/renderer.js

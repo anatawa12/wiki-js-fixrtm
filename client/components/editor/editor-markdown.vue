@@ -240,6 +240,7 @@ import underline from '../../libs/markdown-it-underline'
 import 'katex/dist/contrib/mhchem'
 import twemoji from 'twemoji'
 import plantuml from './markdown/plantuml'
+import macroVersions from './markdown/macro-versions'
 
 // Prism (Syntax Highlighting)
 import Prism from 'prismjs'
@@ -370,6 +371,12 @@ md.renderer.rules.katex_block = (tokens, idx) => {
     return tokens[idx].content
   }
 }
+// ------------------------------------
+// Version Table Macro Preprocessor
+// ------------------------------------
+
+// TODO: Use same options as defined in backend
+macroVersions.init(md, {})
 
 // ========================================
 // TWEMOJI
@@ -627,7 +634,7 @@ export default {
             hint: async (cm, options) => {
               const cur = cm.getCursor()
               const curLine = cm.getLine(cur.line).substring(0, cur.ch)
-              const queryString = curLine.substring(curLine.lastIndexOf('[')+1,curLine.length-2)
+              const queryString = curLine.substring(curLine.lastIndexOf('[') + 1, curLine.length - 2)
               const token = cm.getTokenAt(cur)
               try {
                 const respRaw = await this.$apollo.query({
