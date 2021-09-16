@@ -2,6 +2,7 @@ import i18next from 'i18next'
 import Backend from 'i18next-chained-backend'
 import LocalStorageBackend from 'i18next-localstorage-backend'
 import i18nextXHR from 'i18next-xhr-backend'
+import resourcesToBackend from 'i18next-resources-to-backend'
 import VueI18Next from '@panter/vue-i18next'
 import _ from 'lodash'
 
@@ -17,6 +18,20 @@ export default {
       .init({
         backend: {
           backends: [
+            resourcesToBackend({
+              en: {
+                'ext-auth': {
+                  termsOfService: 'Terms Of Service',
+                  checkTermsOfService: 'Please Check Terms Of Service Before Create your Account or Login.'
+                }
+              },
+              ja: {
+                'ext-auth': {
+                  termsOfService: '利用規約',
+                  checkTermsOfService: 'アカウント作成/ログインの前に利用規約を確認してください。'
+                }
+              }
+            }),
             LocalStorageBackend,
             i18nextXHR
           ],
@@ -56,7 +71,7 @@ export default {
         load: 'currentOnly',
         lowerCaseLng: true,
         fallbackLng: siteConfig.lang,
-        ns: ['common', 'auth']
+        ns: ['common', 'auth', 'ext-auth']
       })
     return new VueI18Next(i18next)
   }
