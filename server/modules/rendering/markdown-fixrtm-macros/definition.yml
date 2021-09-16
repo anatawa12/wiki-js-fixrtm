@@ -1,0 +1,8 @@
+key: markdownFixrtmMacros
+title: fixRTM Macros
+description: Macro for fixRTM wiki
+author: anatawa12
+icon: mdi-script-outline
+enabledDefault: true
+dependsOn: markdownCore
+props:
