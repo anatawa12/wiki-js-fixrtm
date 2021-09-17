@@ -2,121 +2,127 @@
 // Markdown - fixRTM Macro Preprocessor
 // ------------------------------------
 
-module.exports = {
-  init (mdinst) {
-    const openMarker = '```#!versions'
-    const openChar = openMarker.charCodeAt(0)
-    const closeMarker = '```'
-    const closeChar = closeMarker.charCodeAt(0)
+/**
+ * Creates block ruler srrounded with '```'
+ * @param {string} lang the block language tag
+ * @param {string} tag the name of rule tag
+ * @param {function(string):any} parser
+ * @returns
+ */
+function blockRuler(lang, tag, parser) {
+  const openMarker = '```' + lang
+  const openChar = openMarker.charCodeAt(0)
+  const closeMarker = '```'
+  const closeChar = closeMarker.charCodeAt(0)
+  return (state, startLine, endLine, silent) => {
+    let nextLine
+    let markup
+    let params
+    let token
+    let i
+    let autoClosed = false
+    let start = state.bMarks[startLine] + state.tShift[startLine]
+    let max = state.eMarks[startLine]
 
-    mdinst.block.ruler.before('fence', 'macro_versions', (state, startLine, endLine, silent) => {
-      let nextLine
-      let markup
-      let params
-      let token
-      let i
-      let autoClosed = false
-      let start = state.bMarks[startLine] + state.tShift[startLine]
-      let max = state.eMarks[startLine]
+    // Check out the first character quickly,
+    // this should filter out most of non-uml blocks
+    //
+    if (openChar !== state.src.charCodeAt(start)) { return false }
 
-      // Check out the first character quickly,
-      // this should filter out most of non-uml blocks
-      //
-      if (openChar !== state.src.charCodeAt(start)) { return false }
+    // Check out the rest of the marker string
+    //
+    for (i = 0; i < openMarker.length; ++i) {
+      if (openMarker[i] !== state.src[start + i]) { return false }
+    }
 
-      // Check out the rest of the marker string
-      //
-      for (i = 0; i < openMarker.length; ++i) {
-        if (openMarker[i] !== state.src[start + i]) { return false }
-      }
+    markup = state.src.slice(start, start + i)
+    params = state.src.slice(start + i, max)
 
-      markup = state.src.slice(start, start + i)
-      params = state.src.slice(start + i, max)
+    // Since start is found, we can report success here in validation mode
+    //
+    if (silent) { return true }
 
-      // Since start is found, we can report success here in validation mode
-      //
-      if (silent) { return true }
+    // Search for the end of the block
+    //
+    nextLine = startLine
 
-      // Search for the end of the block
-      //
-      nextLine = startLine
-
-      for (;;) {
-        nextLine++
-        if (nextLine >= endLine) {
-          // unclosed block should be autoclosed by end of document.
-          // also block seems to be autoclosed by end of parent
-          break
-        }
-
-        start = state.bMarks[nextLine] + state.tShift[nextLine]
-        max = state.eMarks[nextLine]
-
-        if (start < max && state.sCount[nextLine] < state.blkIndent) {
-          // non-empty line with negative indent should stop the list:
-          // - ```
-          //  test
-          break
-        }
-
-        if (closeChar !== state.src.charCodeAt(start)) {
-          // didn't find the closing fence
-          continue
-        }
-
-        if (state.sCount[nextLine] > state.sCount[startLine]) {
-          // closing fence should not be indented with respect of opening fence
-          continue
-        }
-
-        let closeMarkerMatched = true
-        for (i = 0; i < closeMarker.length; ++i) {
-          if (closeMarker[i] !== state.src[start + i]) {
-            closeMarkerMatched = false
-            break
-          }
-        }
-
-        if (!closeMarkerMatched) {
-          continue
-        }
-
-        // make sure tail has spaces only
-        if (state.skipSpaces(start + i) < max) {
-          continue
-        }
-
-        // found!
-        autoClosed = true
+    for (;;) {
+      nextLine++
+      if (nextLine >= endLine) {
+        // unclosed block should be autoclosed by end of document.
+        // also block seems to be autoclosed by end of parent
         break
       }
 
-      const contents = state.src
-        .split('\n')
-        .slice(startLine + 1, nextLine)
-        .join('\n')
+      start = state.bMarks[nextLine] + state.tShift[nextLine]
+      max = state.eMarks[nextLine]
 
-      // TODO: HERE IS THE START OF MY CODE
-
-      token = state.push('macro_versions', 'versions_table', 0)
-
-      let table = {}
-      for (let line of contents.split('\n')) {
-        if (line.trim() === '') continue
-        let [name, version] = line.split('=', 2)
-        table[name] = version
+      if (start < max && state.sCount[nextLine] < state.blkIndent) {
+        // non-empty line with negative indent should stop the list:
+        // - ```
+        //  test
+        break
       }
 
-      token.meta = table
-      token.block = true
-      token.info = params
-      token.map = [ startLine, nextLine ]
-      token.markup = markup
+      if (closeChar !== state.src.charCodeAt(start)) {
+        // didn't find the closing fence
+        continue
+      }
 
-      state.line = nextLine + (autoClosed ? 1 : 0)
+      if (state.sCount[nextLine] > state.sCount[startLine]) {
+        // closing fence should not be indented with respect of opening fence
+        continue
+      }
 
-      return true
-    }, {
+      let closeMarkerMatched = true
+      for (i = 0; i < closeMarker.length; ++i) {
+        if (closeMarker[i] !== state.src[start + i]) {
+          closeMarkerMatched = false
+          break
+        }
+      }
+
+      if (!closeMarkerMatched) {
+        continue
+      }
+
+      // make sure tail has spaces only
+      if (state.skipSpaces(start + i) < max) {
+        continue
+      }
+
+      // found!
+      autoClosed = true
+      break
+    }
+
+    const contents = state.src
+      .split('\n')
+      .slice(startLine + 1, nextLine)
+      .join('\n')
+
+    token = state.push(tag, tag, 0)
+
+    token.meta = parser(contents)
+    token.block = true
+    token.info = params
+    token.map = [ startLine, nextLine ]
+    token.markup = markup
+
+    state.line = nextLine + (autoClosed ? 1 : 0)
+
+    return true
+  }
+}
+
+module.exports = {
+  init (mdinst) {
+    mdinst.block.ruler.before('fence', 'macro_versions', blockRuler('#!versions', 'macro_versions', (contents) => {
+      return contents.split('\n')
+        .filter(line => line.trim() !== '')
+        .map(line => line.split('=', 2))
+        .reduce((acc, [key, ver]) => Object.assign(acc, {[key]: ver}), {})
+    }), {
       alt: [ 'paragraph', 'reference', 'blockquote', 'list' ]
     })
     mdinst.renderer.rules.macro_versions = (tokens, idx) => {
