@@ -62,3 +62,10 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository }}:latest
             ghcr.io/${{ github.repository }}:${{ env.NEW_RELEASE }}
+
+      - name: Remove tag if failure
+        if: ${{ failure() }}
+        run: |
+          git tag -d "$NEW_RELEASE"
+          git push --delete origin "$NEW_RELEASE"
+          exit 1 # make failure
