@@ -14,7 +14,9 @@ jobs:
           git init --bare
 
           # credentials setter
-          git config "http.${GITHUB_SERVER_URL}/.extraheader" "x-access-token:${GITHUB_TOKEN}"
+          CREDENTIAL="$(printf "x-access-token:%s" "${GITHUB_TOKEN}" | base64)"
+          printf "::add-mask::%s" "$CREDENTIAL"
+          git config "http.${GITHUB_SERVER_URL}/.extraheader" "AUTHORIZATION: basic $CREDENTIAL"
 
           # repository config
           git config remote.upstream.url https://github.com/Requarks/wiki.git
