@@ -134,6 +134,7 @@ module.exports = {
         let version = table[key]
         if (version == null && !always) return
         if (version == null) version = 'not available'
+        if (version === 'drop') return
         let versionHTML = version.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
         builder += `<tr><td>${name}</td><td>${versionHTML}</td></tr>`
       }
