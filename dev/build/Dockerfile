@@ -13,6 +13,8 @@ COPY ./package.json ./package.json
 COPY ./.babelrc ./.babelrc
 COPY ./.eslintignore ./.eslintignore
 COPY ./.eslintrc.yml ./.eslintrc.yml
+# FIXRTM: for symkink
+COPY ./server/modules/rendering/markdown-fixrtm-macros/renderer.js ./server/modules/rendering/markdown-fixrtm-macros/renderer.js
 
 RUN yarn cache clean
 RUN yarn --frozen-lockfile --non-interactive
