@@ -50,6 +50,7 @@ jobs:
         uses: docker/login-action@v1
         with:
           registry: ghcr.io
+          file:     dev/build/Dockerfile
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
