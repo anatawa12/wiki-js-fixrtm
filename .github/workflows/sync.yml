@@ -1,0 +1,29 @@
+name: Sync
+on:
+  schedule:
+    - cron:  '0 0 * * *'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: fetch and push
+        run: |
+          # initialize repository
+          git init --bare
+
+          # credentials setter
+          git config "http.https://github.com/.extraheader" "x-access-token:${GITHIB_TOKEN}"
+
+          # repository config
+          git config remote.upstream.url https://github.com/Requarks/wiki.git
+          git config remote.upstream.fetch "+refs/heads/*:refs/remotes/upstream/*"
+          git config remote.upstream.partialclonefilter tree:0
+          git config remote.origin.url https://github.com/anatawa12/wiki.git
+
+          # fetching
+          git fetch --depth=1 --tags upstream
+          # push
+          git push -f --tags origin
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
