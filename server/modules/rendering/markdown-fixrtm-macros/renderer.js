@@ -115,6 +115,55 @@ function blockRuler(lang, tag, parser) {
   }
 }
 
+/**
+ * Creates single-line block ruler
+ * @param {string} prefix the prefix of the rule
+ * @param {string} tag the name of rule tag
+ * @param {function(string):any} parser
+ * @returns
+ */
+function lineBlockRuler(prefix, tag, parser) {
+  const openChar = prefix.charCodeAt(0)
+  return (state, startLine, _endLine, silent) => {
+    let markup
+    let params
+    let token
+    let i
+    let start = state.bMarks[startLine] + state.tShift[startLine]
+    let max = state.eMarks[startLine]
+
+    // Check out the first character quickly,
+    // this should filter out most of non-uml blocks
+    //
+    if (openChar !== state.src.charCodeAt(start)) { return false }
+
+    // Check out the rest of the marker string
+    //
+    for (i = 0; i < prefix.length; ++i) {
+      if (prefix[i] !== state.src[start + i]) { return false }
+    }
+
+    markup = state.src.slice(start, start + i)
+    params = state.src.slice(start + i, max)
+
+    // Since start is found, we can report success here in validation mode
+    //
+    if (silent) { return true }
+
+    token = state.push(tag, tag, 0)
+
+    token.meta = parser(params.trim())
+    token.block = true
+    token.info = params
+    token.map = [ startLine, startLine ]
+    token.markup = markup
+
+    state.line = startLine + 1
+
+    return true
+  }
+}
+
 module.exports = {
   init (mdinst) {
     mdinst.block.ruler.before('fence', 'macro_versions', blockRuler('#!versions', 'macro_versions', (contents) => {
@@ -147,6 +196,15 @@ module.exports = {
 
       builder += `</tbody></table>\n`
       return builder
+    }
+
+    // Anchor
+    mdinst.block.ruler.before('fence', 'macro_ancher', lineBlockRuler('#!anchor', 'macro_ancher', (params) => params), {
+      alt: [ 'paragraph', 'reference', 'blockquote', 'list' ]
+    })
+    mdinst.renderer.rules.macro_ancher = (tokens, idx) => {
+      let anchor = tokens[idx].meta
+      return `<span id="${anchor.replace(/"/, '&quot;')}"></span>`
     }
   }
 }
