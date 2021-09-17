@@ -50,7 +50,6 @@ jobs:
         uses: docker/login-action@v1
         with:
           registry: ghcr.io
-          file:     dev/build/Dockerfile
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
@@ -59,6 +58,7 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           push: true
+          file: ./dev/build/Dockerfile
           tags: |
             ghcr.io/${{ github.repository }}:latest
             ghcr.io/${{ github.repository }}:${{ env.NEW_RELEASE }}
