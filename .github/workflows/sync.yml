@@ -21,7 +21,7 @@ jobs:
           # repository config
           git config remote.upstream.url https://github.com/Requarks/wiki.git
           git config remote.upstream.fetch "+refs/heads/*:refs/remotes/upstream/*"
-          git config remote.upstream.partialclonefilter tree:0
+          # git config remote.upstream.partialclonefilter tree:0
           git config remote.origin.url "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git"
 
           # fetching
