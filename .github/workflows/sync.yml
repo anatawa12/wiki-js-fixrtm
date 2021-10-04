@@ -25,7 +25,8 @@ jobs:
           git config remote.origin.url "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git"
 
           # fetching
-          git fetch --depth=1 --tags upstream
+          # git fetch --depth=1 --tags upstream
+          git fetch --tags upstream
           # push
           git push -f --tags origin
         env:
