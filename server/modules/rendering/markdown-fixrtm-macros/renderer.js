@@ -189,9 +189,9 @@ module.exports = {
       }
 
       addRow('fixrtm', 'fixRTM', !table['rtm'] || !table['rtm'].match(/1\.12\.2|^2\./))
-      addRow('fixrtm.snapshot', 'fixRTM(SNAPSHOT)', false)
+      addRow('fixrtm.pre', 'fixRTM(pre release)', false)
       addRow('kaiz', 'KaizPatchX', true)
-      addRow('kaiz.candidate', 'KaizPatchX(Release Candidate)', false)
+      addRow('kaiz.pre', 'KaizPatchX(pre release)', false)
       addRow('rtm', 'RTM', false)
 
       builder += `</tbody></table>\n`
