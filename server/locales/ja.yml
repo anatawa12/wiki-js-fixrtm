@@ -1,0 +1,3 @@
+auth:
+  termsOfService: '利用規約'
+  checkTermsOfService: 'アカウント作成/ログインの前に利用規約を確認してください。'
