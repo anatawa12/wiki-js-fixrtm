@@ -76,7 +76,8 @@ module.exports = {
     }
 
     // -> Load dev locale files if present
-    if (WIKI.IS_DEBUG) {
+    // eslint-disable-next-line no-constant-condition
+    if (WIKI.IS_DEBUG || true) {
       try {
         const devEntriesRaw = await fs.readFile(path.join(WIKI.SERVERPATH, `locales/${locale}.yml`), 'utf8')
         if (devEntriesRaw) {
