@@ -47,3 +47,5 @@ test-results/
 
 # Localization Resources
 /server/locales/**/*.yml
+!/server/locales/ja.yml
+!/server/locales/en.yml
