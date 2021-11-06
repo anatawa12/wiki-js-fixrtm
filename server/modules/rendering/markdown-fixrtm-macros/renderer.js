@@ -230,13 +230,17 @@ const ghSchema = {}
     }
     const schemaLen = schema.length
 
-    const validate = (text) => matcher(text)?.[0]?.length || null
+    const validate = (text) => {
+      const matched = matcher(text)
+      if (matched) return matched[0].length
+      return null
+    }
     const test = (text) => text.substr(0, schemaLen) === schema && validate(text.slice(schemaLen)) === (text.length - schemaLen)
     const normalize = (url) => {
       const tail = url.slice(schemaLen)
       const matched = matcher(tail).groups
-      matched.user = matched.user ?? user
-      matched.repo = matched.repo ?? repo
+      matched.user = matched.user || user
+      matched.repo = matched.repo || repo
       return buildGithubUrl(matched)
     }
     return {
@@ -259,7 +263,7 @@ const ghSchema = {}
 
     function addGithubSchema(linkify, schema) {
       linkify.add(schema.schema, {
-        validate: (text, pos) => schema.validate(text.slice(pos)) ?? 0,
+        validate: (text, pos) => schema.validate(text.slice(pos)) || 0,
         normalize: (match) => {
           match.url = schema.normalize(match.url)
         }
