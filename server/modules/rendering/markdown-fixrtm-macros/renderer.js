@@ -164,8 +164,135 @@ function lineBlockRuler(prefix, tag, parser) {
   }
 }
 
+// autolink for {github,fixrtm,kaiz}
+
+// github schema
+const ghSchema = {}
+{
+  let urlHashRegex
+  let repositoryElementInfoRegex
+  let repositoryInfoRegex
+  let userRepositoryInfoRegex
+  // initalize regexes
+  {
+    // alpha numbernic
+    const alnum = 'a-zA-Z0-9'
+    const nonEndDot = '\\.(?=\\S|$)'
+    const pathOrQueryChars = `(?:[a-zA-Z0-9-_+%&]|${nonEndDot})`
+    const srcUsername = `(?<user>[${alnum}](?:[${alnum}]|-(?=[${alnum}])){0,38})`
+    const srcReponame = `(?<repo>(?:[${alnum}_-]|${nonEndDot}){1,100})`
+    const srcIssuePart = '#(?<issue>[0-9]+)'
+    const commitPart = `@(?<commit>(?:[${alnum}_-]|${nonEndDot})+)`
+    const hash = `(?<hash>#${pathOrQueryChars}+)`
+    const hashOpt = `${hash}?`
+    const path = `(?<path>/${pathOrQueryChars}*)`
+    // #num or @commit or @commit/path
+    const repositoryElementInfoPart = '(?:' + (srcIssuePart + '|' + commitPart + path + '?') + ')'
+    const repositoryInfoPart = srcReponame + repositoryElementInfoPart + '?'
+    const userOrRepositoryInfoPart = srcUsername + '(?:/' + repositoryInfoPart + ')?'
+    urlHashRegex = new RegExp('^' + hash)
+    repositoryElementInfoRegex = new RegExp('^' + repositoryElementInfoPart + hashOpt)
+    repositoryInfoRegex = new RegExp('^' + repositoryInfoPart + hashOpt)
+    userRepositoryInfoRegex = new RegExp('^' + userOrRepositoryInfoPart + hashOpt)
+  }
+
+  const buildGithubUrl = (options) => {
+    let result = 'https://github.com/'
+    result += options.user
+    if (options.repo) result += `/${options.repo}`
+    if (options.issue) result += `/issues/${options.issue}`
+    if (options.commit) {
+      if (options.path) {
+        result += `/tree/${options.commit}${options.path}`
+      } else {
+        result += `/commit/${options.commit}`
+      }
+    }
+    if (options.hash) result += options.hash
+    return result
+  }
+
+  const makeGithubSchema = (schema, user, repo) => {
+    let regexes
+    if (!user) {
+      regexes = [userRepositoryInfoRegex]
+    } else if (!repo) {
+      regexes = [repositoryInfoRegex, urlHashRegex]
+    } else {
+      regexes = [repositoryElementInfoRegex, repositoryInfoRegex, urlHashRegex]
+    }
+    const matcher = (str) => {
+      for (const regex of regexes) {
+        const match = str.match(regex)
+        if (match) return match
+      }
+      return null
+    }
+    const schemaLen = schema.length
+
+    const validate = (text) => matcher(text)?.[0]?.length || null
+    const test = (text) => text.substr(0, schemaLen) === schema && validate(text.slice(schemaLen)) === (text.length - schemaLen)
+    const normalize = (url) => {
+      const tail = url.slice(schemaLen)
+      const matched = matcher(tail).groups
+      matched.user = matched.user ?? user
+      matched.repo = matched.repo ?? repo
+      return buildGithubUrl(matched)
+    }
+    return {
+      schema: schema,
+      validate: validate,
+      test: test,
+      normalize: normalize
+    }
+  }
+
+  const schemas = [
+    makeGithubSchema('github:'),
+    makeGithubSchema('fixrtm:', 'fixrtm', 'fixRTM'),
+    makeGithubSchema('kaiz:', 'Kai-Z-JP', 'KaizPatchX'),
+    makeGithubSchema('anatawa12:', 'anatawa12')
+  ]
+
+  ghSchema.linkifyInit = (linkify) => {
+    for (const schema of schemas) addGithubSchema(linkify, schema)
+
+    function addGithubSchema(linkify, schema) {
+      linkify.add(schema.schema, {
+        validate: (text, pos) => schema.validate(text.slice(pos)) ?? 0,
+        normalize: (match) => {
+          match.url = schema.normalize(match.url)
+        }
+      })
+    }
+  }
+
+  ghSchema.mdInit = (md) => {
+    const normalizeLinkOld = md.normalizeLink
+    md.normalizeLink = (url) => {
+      for (const schema of schemas) {
+        if (schema.test(url)) return schema.normalize(url)
+      }
+      return normalizeLinkOld(url)
+    }
+    const normalizeLinkTextOld = md.normalizeLinkText
+    md.normalizeLinkText = (url) => {
+      for (const schema of schemas) {
+        if (schema.test(url)) return url
+      }
+      return normalizeLinkTextOld(url)
+    }
+  }
+}
+
+function linkifyInit(linkify) {
+  ghSchema.linkifyInit(linkify)
+}
+
 module.exports = {
   init (mdinst) {
+    linkifyInit(mdinst.linkify)
+    ghSchema.mdInit(mdinst)
     mdinst.block.ruler.before('fence', 'macro_versions', blockRuler('#!versions', 'macro_versions', (contents) => {
       return contents.split('\n')
         .filter(line => line.trim() !== '')
