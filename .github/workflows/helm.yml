@@ -11,6 +11,7 @@ on:
 
 jobs:
   build:
+    if: false # anataw12: disable
     name: Update Chart
     runs-on: ubuntu-latest
 
