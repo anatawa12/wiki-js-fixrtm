@@ -241,6 +241,7 @@ import underline from '../../libs/markdown-it-underline'
 import 'katex/dist/contrib/mhchem'
 import twemoji from 'twemoji'
 import plantuml from './markdown/plantuml'
+import fixrtmMacros from './markdown/fixrtm-macros'
 
 // Prism (Syntax Highlighting)
 import Prism from 'prismjs'
@@ -373,6 +374,11 @@ md.renderer.rules.katex_block = (tokens, idx) => {
     return tokens[idx].content
   }
 }
+// ------------------------------------
+// Version fixRTM Macro
+// ------------------------------------
+
+fixrtmMacros.init(md, {})
 
 // ========================================
 // TWEMOJI

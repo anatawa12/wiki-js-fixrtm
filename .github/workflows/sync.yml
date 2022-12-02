@@ -1,0 +1,33 @@
+name: Sync
+on:
+  workflow_dispatch: {}
+  schedule:
+    - cron:  '0 0 * * *'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: fetch and push
+        run: |
+          # initialize repository
+          git init --bare
+
+          # credentials setter
+          CREDENTIAL="$(printf "x-access-token:%s" "${GITHUB_TOKEN}" | base64)"
+          printf "::add-mask::%s" "$CREDENTIAL"
+          git config "http.${GITHUB_SERVER_URL}/.extraheader" "AUTHORIZATION: basic $CREDENTIAL"
+
+          # repository config
+          git config remote.upstream.url https://github.com/Requarks/wiki.git
+          git config remote.upstream.fetch "+refs/heads/*:refs/remotes/upstream/*"
+          # git config remote.upstream.partialclonefilter tree:0
+          git config remote.origin.url "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git"
+
+          # fetching
+          # git fetch --depth=1 --tags upstream
+          git fetch --tags upstream
+          # push
+          git push -f --tags origin
+        env:
+          GITHUB_TOKEN: ${{ github.token }}

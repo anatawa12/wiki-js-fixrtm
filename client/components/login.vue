@@ -19,6 +19,18 @@
           )
           .body-2 {{errorMessage}}
         //-------------------------------------------------
+        //- TERMS OF SERVICE CHECK
+        //-------------------------------------------------
+        template(v-if='screen === `login` && strategies.length > 1')
+          .login-subtitle
+            .text-subtitle-1 {{$t('auth:termsOfService')}}
+          .login-list
+            v-list.elevation-1.radius-7(nav, light)
+              v-list-item-group
+                v-list-item(@click='openTos')
+                  //v-avatar.mr-3(tile, size='24', v-html='stg.strategy.icon')
+                  span.text-none {{$t('auth:checkTermsOfService')}}
+        //-------------------------------------------------
         //- PROVIDERS LIST
         //-------------------------------------------------
         template(v-if='screen === `login` && strategies.length > 1')
@@ -349,6 +361,12 @@ export default {
     }
   },
   methods: {
+    /**
+     * TERMS OF SERVICE
+     */
+    openTos() {
+      window.location.href = '/tos'
+    },
     /**
      * LOGIN
      */
