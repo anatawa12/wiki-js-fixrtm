@@ -45,6 +45,10 @@ module.exports = {
       await this.git.init()
     }
 
+    // Disable quotePath
+    // Link https://git-scm.com/docs/git-config#Documentation/git-config.txt-corequotePath
+    await this.git.raw(['config', '--local', 'core.quotepath', false])
+
     // Set default author
     await this.git.raw(['config', '--local', 'user.email', this.config.defaultEmail])
     await this.git.raw(['config', '--local', 'user.name', this.config.defaultName])
@@ -73,7 +77,7 @@ module.exports = {
               mode: 0o600
             })
           } catch (err) {
-            console.error(err)
+            WIKI.logger.error(err)
             throw err
           }
         }
@@ -181,7 +185,7 @@ module.exports = {
       if (!item.binary && contentType) {
         // -> Page
 
-        if (fileExists && item.relPath !== item.oldPath) {
+        if (fileExists && !item.importAll && item.relPath !== item.oldPath) {
           // Page was renamed by git, so rename in DB
           WIKI.logger.info(`(STORAGE/GIT) Page marked as renamed: from ${item.oldPath} to ${item.relPath}`)
 
@@ -195,7 +199,7 @@ module.exports = {
             destinationLocale: contentPath.locale,
             skipStorage: true
           })
-        } else if (!fileExists && item.deletions > 0 && item.insertions === 0) {
+        } else if (!fileExists && !item.importAll && item.deletions > 0 && item.insertions === 0) {
           // Page was deleted by git, can safely mark as deleted in DB
           WIKI.logger.info(`(STORAGE/GIT) Page marked as deleted: ${item.relPath}`)
 
@@ -224,7 +228,7 @@ module.exports = {
       } else {
         // -> Asset
 
-        if (fileExists && ((item.before === item.after) || (item.deletions === 0 && item.insertions === 0))) {
+        if (fileExists && !item.importAll && ((item.before === item.after) || (item.deletions === 0 && item.insertions === 0))) {
           // Asset was renamed by git, so rename in DB
           WIKI.logger.info(`(STORAGE/GIT) Asset marked as renamed: from ${item.oldPath} to ${item.relPath}`)
 
@@ -240,7 +244,7 @@ module.exports = {
             WIKI.logger.info(`(STORAGE/GIT) Asset was not found in the DB, nothing to rename: ${item.relPath}`)
           }
           continue
-        } else if (!fileExists && ((item.before > 0 && item.after === 0) || (item.deletions > 0 && item.insertions === 0))) {
+        } else if (!fileExists && !item.importAll && ((item.before > 0 && item.after === 0) || (item.deletions > 0 && item.insertions === 0))) {
           // Asset was deleted by git, can safely mark as deleted in DB
           WIKI.logger.info(`(STORAGE/GIT) Asset marked as deleted: ${item.relPath}`)
 
@@ -285,10 +289,13 @@ module.exports = {
     const filePath = path.join(this.repoPath, fileName)
     await fs.outputFile(filePath, page.injectMetadata(), 'utf8')
 
-    await this.git.add(`./${fileName}`)
-    await this.git.commit(`docs: create ${page.path}`, fileName, {
-      '--author': `"${page.authorName} <${page.authorEmail}>"`
-    })
+    const gitFilePath = `./${fileName}`
+    if ((await this.git.checkIgnore(gitFilePath)).length === 0) {
+      await this.git.add(gitFilePath)
+      await this.git.commit(`docs: create ${page.path}`, fileName, {
+        '--author': `"${page.authorName} <${page.authorEmail}>"`
+      })
+    }
   },
   /**
    * UPDATE
@@ -304,10 +311,13 @@ module.exports = {
     const filePath = path.join(this.repoPath, fileName)
     await fs.outputFile(filePath, page.injectMetadata(), 'utf8')
 
-    await this.git.add(`./${fileName}`)
-    await this.git.commit(`docs: update ${page.path}`, fileName, {
-      '--author': `"${page.authorName} <${page.authorEmail}>"`
-    })
+    const gitFilePath = `./${fileName}`
+    if ((await this.git.checkIgnore(gitFilePath)).length === 0) {
+      await this.git.add(gitFilePath)
+      await this.git.commit(`docs: update ${page.path}`, fileName, {
+        '--author': `"${page.authorName} <${page.authorEmail}>"`
+      })
+    }
   },
   /**
    * DELETE
@@ -321,10 +331,13 @@ module.exports = {
       fileName = `${page.localeCode}/${fileName}`
     }
 
-    await this.git.rm(`./${fileName}`)
-    await this.git.commit(`docs: delete ${page.path}`, fileName, {
-      '--author': `"${page.authorName} <${page.authorEmail}>"`
-    })
+    const gitFilePath = `./${fileName}`
+    if ((await this.git.checkIgnore(gitFilePath)).length === 0) {
+      await this.git.rm(gitFilePath)
+      await this.git.commit(`docs: delete ${page.path}`, fileName, {
+        '--author': `"${page.authorName} <${page.authorEmail}>"`
+      })
+    }
   },
   /**
    * RENAME
@@ -427,7 +440,8 @@ module.exports = {
               relPath,
               file,
               deletions: 0,
-              insertions: 0
+              insertions: 0,
+              importAll: true
             }], rootUser)
           }
           cb()

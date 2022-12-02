@@ -308,7 +308,7 @@ module.exports = class User extends Model {
 
       // Authenticate
       return new Promise((resolve, reject) => {
-        WIKI.auth.passport.authenticate(selStrategy.strategyKey, {
+        WIKI.auth.passport.authenticate(selStrategy.key, {
           session: !strInfo.useForm,
           scope: strInfo.scopes ? strInfo.scopes : null
         }, async (err, user, info) => {
@@ -346,7 +346,6 @@ module.exports = class User extends Model {
         }
       }
     }
-    console.info(redirect)
 
     // Is 2FA required?
     if (!skipTFA) {
