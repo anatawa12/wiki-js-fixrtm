@@ -11,7 +11,7 @@ jobs:
     steps:
       - name: cancel if "NO_RELEASE" is specified
         if: contains(github.event.head_commit.message, 'NO_RELEASE')
-        uses: andymckay/cancel-action@0.2
+        uses: andymckay/cancel-action@0.3
       - name: Wait for cancel
         if: (success() || failure()) && contains(github.event.head_commit.message, 'NO_RELEASE')
         run: |
